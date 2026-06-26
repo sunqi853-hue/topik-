@@ -3,9 +3,10 @@ const audioBase = window.TOPIK_AUDIO_BASE || {};
 const releaseAudioBase = window.TOPIK_AUDIO_RELEASE_BASE || 'https://github.com/sunqi853-hue/topik-/releases/download/v1.0/';
 const state = {
   level: '全部', unit: '全部', pos: '全部', query: '', index: 0,
-  hideMeaning: false, favoritesOnly: false, unmasteredOnly: false,
+  hideMeaning: false, favoritesOnly: false, unmasteredOnly: false, spellingMode: false,
   favorites: new Set(JSON.parse(localStorage.getItem('topikFavorites') || '[]')),
   mastered: new Set(JSON.parse(localStorage.getItem('topikMastered') || '[]')),
+  spellingWrong: new Set(JSON.parse(localStorage.getItem('topikSpellingWrong') || '[]')),
 };
 const $ = (id) => document.getElementById(id);
 const levels = ['全部','初级','中级','高级'];
@@ -13,13 +14,16 @@ const els = {
   summary: $('summaryText'), search: $('searchInput'), levelTabs: $('levelTabs'), unit: $('unitSelect'), pos: $('posSelect'),
   unitAudio: $('unitAudio'), unitAudioBtn: $('unitAudioBtn'), hide: $('hideMeaningToggle'), favOnly: $('favoritesOnlyToggle'), unmasteredOnly: $('unmasteredOnlyToggle'),
   filterLabel: $('filterLabel'), currentWord: $('currentWord'), cardWord: $('cardWord'), cardNote: $('cardNote'), cardMeaning: $('cardMeaning'), cardPos: $('cardPos'), cardLevelUnit: $('cardLevelUnit'), cardPage: $('cardPage'),
-  speak: $('speakBtn'), reveal: $('revealBtn'), favorite: $('favoriteBtn'), master: $('masterBtn'), shuffle: $('shuffleBtn'), quickShuffle: $('quickShuffleBtn'), prev: $('prevBtn'), next: $('nextBtn'), count: $('countText'), list: $('wordList')
+  speak: $('speakBtn'), slowSpeak: $('slowSpeakBtn'), reveal: $('revealBtn'), spellMode: $('spellModeBtn'), favorite: $('favoriteBtn'), master: $('masterBtn'), shuffle: $('shuffleBtn'), quickShuffle: $('quickShuffleBtn'), prev: $('prevBtn'), next: $('nextBtn'), count: $('countText'), list: $('wordList'),
+  spellingPanel: $('spellingPanel'), spellingInput: $('spellingInput'), spellingFeedback: $('spellingFeedback'), checkSpelling: $('checkSpellingBtn'), hintSpelling: $('hintSpellingBtn'), showAnswer: $('showAnswerBtn')
 };
 function saveSet(key, set) { localStorage.setItem(key, JSON.stringify([...set])); }
 function audioUrl(level, unit) {
-  if (audioBase[level]) return encodeURI(audioBase[level] + 'UNIT ' + unit + '.mp3');
   const fileName = level + '-UNIT-' + unit + '.mp3';
   return releaseAudioBase + encodeURIComponent(fileName);
+}
+function normalizeKoreanAnswer(text) {
+  return String(text || '').replace(/s+/g, '').trim();
 }
 function unitOptions() {
   els.unit.innerHTML = '';
@@ -79,14 +83,22 @@ function renderCard(list) {
   const v = current(list);
   state.index = list.indexOf(v);
   els.currentWord.textContent = v.word;
-  els.cardWord.textContent = v.word;
+  els.cardWord.textContent = state.spellingMode ? '拼写练习' : v.word;
   els.cardNote.textContent = v.note ? v.note : ' ';
   els.cardMeaning.textContent = v.meaning;
-  els.cardMeaning.classList.toggle('hidden', state.hideMeaning);
+  els.cardMeaning.classList.toggle('hidden', state.hideMeaning && !state.spellingMode);
   els.cardPos.textContent = v.pos || '词性未标注';
   els.cardLevelUnit.textContent = v.level + ' · UNIT ' + v.unit;
   els.cardPage.textContent = '页码 ' + v.page;
   els.reveal.textContent = state.hideMeaning ? '显示释义' : '隐藏释义';
+  els.spellMode.textContent = state.spellingMode ? '退出拼写' : '拼写';
+  els.spellMode.classList.toggle('active', state.spellingMode);
+  els.spellingPanel.classList.toggle('active', state.spellingMode);
+  if (state.spellingMode) {
+    els.spellingInput.value = '';
+    els.spellingFeedback.textContent = '看中文释义，输入对应韩文；可以点“朗读”或“慢速”听发音。';
+    els.spellingFeedback.className = 'spelling-feedback';
+  }
   els.favorite.classList.toggle('active', state.favorites.has(v.id));
   els.master.classList.toggle('active', state.mastered.has(v.id));
   els.master.classList.add('warn');
@@ -127,12 +139,51 @@ function shuffleWord() {
   state.index = Math.floor(Math.random() * list.length);
   render();
 }
-function speakWord() {
+function pickKoreanVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  return voices.find(v => v.lang === 'ko-KR') || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ko')) || null;
+}
+function speakWord(rate = 0.82) {
   const list = filtered(); const v = current(list); if (!v || !('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(v.word);
-  u.lang = 'ko-KR'; u.rate = 0.82;
+  u.lang = 'ko-KR'; u.rate = rate; u.pitch = 1; u.volume = 1;
+  const voice = pickKoreanVoice();
+  if (voice) u.voice = voice;
   window.speechSynthesis.speak(u);
+}
+function checkSpelling() {
+  const list = filtered(); const v = current(list); if (!v) return;
+  const answer = normalizeKoreanAnswer(v.word);
+  const typed = normalizeKoreanAnswer(els.spellingInput.value);
+  if (!typed) {
+    els.spellingFeedback.textContent = '先输入韩文，再点击检查。';
+    els.spellingFeedback.className = 'spelling-feedback';
+    return;
+  }
+  if (typed === answer) {
+    els.spellingFeedback.textContent = '正确！这个词已经记住一半了。';
+    els.spellingFeedback.className = 'spelling-feedback ok';
+    state.spellingWrong.delete(v.id);
+    saveSet('topikSpellingWrong', state.spellingWrong);
+  } else {
+    els.spellingFeedback.textContent = '还不对，注意空格、收音和音节顺序。';
+    els.spellingFeedback.className = 'spelling-feedback bad';
+    state.spellingWrong.add(v.id);
+    saveSet('topikSpellingWrong', state.spellingWrong);
+  }
+}
+function hintSpelling() {
+  const list = filtered(); const v = current(list); if (!v) return;
+  const compact = normalizeKoreanAnswer(v.word);
+  els.spellingFeedback.textContent = compact ? '提示：第一个字是「' + compact[0] + '」，共 ' + compact.length + ' 个字符。' : '这个词暂时没有可用提示。';
+  els.spellingFeedback.className = 'spelling-feedback hint';
+}
+function showSpellingAnswer() {
+  const list = filtered(); const v = current(list); if (!v) return;
+  els.spellingFeedback.textContent = '答案：' + v.word;
+  els.spellingFeedback.className = 'spelling-feedback hint';
 }
 els.search.addEventListener('input', e => { state.query = e.target.value; state.index = 0; render(); });
 els.unit.addEventListener('change', e => { state.unit = e.target.value; state.index = 0; render(); });
@@ -145,8 +196,14 @@ els.shuffle.addEventListener('click', shuffleWord);
 els.quickShuffle.addEventListener('click', shuffleWord);
 els.prev.addEventListener('click', () => { const list=filtered(); if(!list.length)return; state.index=(state.index-1+list.length)%list.length; render(); });
 els.next.addEventListener('click', () => { const list=filtered(); if(!list.length)return; state.index=(state.index+1)%list.length; render(); });
-els.speak.addEventListener('click', speakWord);
+els.speak.addEventListener('click', () => speakWord(0.82));
+els.slowSpeak.addEventListener('click', () => speakWord(0.62));
 els.reveal.addEventListener('click', () => { state.hideMeaning = !state.hideMeaning; els.hide.checked = state.hideMeaning; render(); });
+els.spellMode.addEventListener('click', () => { state.spellingMode = !state.spellingMode; state.hideMeaning = false; els.hide.checked = false; render(); if (state.spellingMode) els.spellingInput.focus(); });
+els.checkSpelling.addEventListener('click', checkSpelling);
+els.hintSpelling.addEventListener('click', hintSpelling);
+els.showAnswer.addEventListener('click', showSpellingAnswer);
+els.spellingInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkSpelling(); });
 els.favorite.addEventListener('click', () => { const v=current(filtered()); if(!v)return; state.favorites.has(v.id) ? state.favorites.delete(v.id) : state.favorites.add(v.id); saveSet('topikFavorites', state.favorites); render(); });
 els.master.addEventListener('click', () => { const v=current(filtered()); if(!v)return; state.mastered.has(v.id) ? state.mastered.delete(v.id) : state.mastered.add(v.id); saveSet('topikMastered', state.mastered); render(); });
 document.addEventListener('keydown', e => {
@@ -154,6 +211,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') els.next.click();
   if (e.key === 'ArrowLeft') els.prev.click();
   if (e.key === ' ') { e.preventDefault(); els.reveal.click(); }
-  if (e.key.toLowerCase() === 'r') speakWord();
+  if (e.key.toLowerCase() === 'r') speakWord(0.82);
 });
+if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = pickKoreanVoice;
 render();
