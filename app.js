@@ -1,6 +1,4 @@
 const vocab = window.TOPIK_VOCAB || [];
-const audioBase = window.TOPIK_AUDIO_BASE || {};
-const releaseAudioBase = window.TOPIK_AUDIO_RELEASE_BASE || 'https://github.com/sunqi853-hue/topik-/releases/download/v1.0/';
 const state = {
   level: '全部', unit: '全部', pos: '全部', query: '', index: 0,
   hideMeaning: false, favoritesOnly: false, unmasteredOnly: false, spellingMode: false,
@@ -8,20 +6,18 @@ const state = {
   mastered: new Set(JSON.parse(localStorage.getItem('topikMastered') || '[]')),
   spellingWrong: new Set(JSON.parse(localStorage.getItem('topikSpellingWrong') || '[]')),
 };
+const studyCount = JSON.parse(localStorage.getItem('topikStudyCount') || '{}');
 const $ = (id) => document.getElementById(id);
 const levels = ['全部','初级','中级','高级'];
 const els = {
   summary: $('summaryText'), search: $('searchInput'), levelTabs: $('levelTabs'), unit: $('unitSelect'), pos: $('posSelect'),
-  unitAudio: $('unitAudio'), unitAudioBtn: $('unitAudioBtn'), hide: $('hideMeaningToggle'), favOnly: $('favoritesOnlyToggle'), unmasteredOnly: $('unmasteredOnlyToggle'),
+  studyCount: $('studyCountText'), hide: $('hideMeaningToggle'), favOnly: $('favoritesOnlyToggle'), unmasteredOnly: $('unmasteredOnlyToggle'),
   filterLabel: $('filterLabel'), currentWord: $('currentWord'), cardWord: $('cardWord'), cardNote: $('cardNote'), cardMeaning: $('cardMeaning'), cardPos: $('cardPos'), cardLevelUnit: $('cardLevelUnit'), cardPage: $('cardPage'),
   speak: $('speakBtn'), slowSpeak: $('slowSpeakBtn'), reveal: $('revealBtn'), spellMode: $('spellModeBtn'), favorite: $('favoriteBtn'), master: $('masterBtn'), shuffle: $('shuffleBtn'), quickShuffle: $('quickShuffleBtn'), prev: $('prevBtn'), next: $('nextBtn'), count: $('countText'), list: $('wordList'),
   spellingPanel: $('spellingPanel'), spellingInput: $('spellingInput'), spellingFeedback: $('spellingFeedback'), checkSpelling: $('checkSpellingBtn'), hintSpelling: $('hintSpellingBtn'), showAnswer: $('showAnswerBtn')
 };
 function saveSet(key, set) { localStorage.setItem(key, JSON.stringify([...set])); }
-function audioUrl(level, unit) {
-  const fileName = level + '-UNIT-' + unit + '.mp3';
-  return releaseAudioBase + encodeURIComponent(fileName);
-}
+function saveStudyCount() { localStorage.setItem('topikStudyCount', JSON.stringify(studyCount)); }
 function normalizeKoreanAnswer(text) {
   return String(text || '').replace(/s+/g, '').trim();
 }
@@ -56,13 +52,6 @@ function filtered() {
     return true;
   });
 }
-function setAudio(entry) {
-  const level = state.level !== '全部' ? state.level : entry?.level;
-  const unit = state.unit !== '全部' ? state.unit : entry?.unit;
-  if (!level || !unit) { els.unitAudio.removeAttribute('src'); els.unitAudio.load(); return; }
-  const src = audioUrl(level, unit);
-  if (els.unitAudio.getAttribute('src') !== src) els.unitAudio.src = src;
-}
 function renderLevelTabs() {
   els.levelTabs.innerHTML = '';
   levels.forEach(level => {
@@ -78,10 +67,14 @@ function renderCard(list) {
   if (!list.length) {
     ['currentWord','cardWord','cardNote','cardMeaning','cardPos','cardLevelUnit','cardPage'].forEach(id => $(id).textContent = '');
     els.cardMeaning.textContent = '没有符合条件的词条';
+    els.studyCount.textContent = '学习次数：—';
     return;
   }
   const v = current(list);
   state.index = list.indexOf(v);
+  studyCount[v.id] = (studyCount[v.id] || 0) + 1;
+  saveStudyCount();
+  els.studyCount.textContent = '学习次数：' + studyCount[v.id] + ' 次';
   els.currentWord.textContent = v.word;
   els.cardWord.textContent = state.spellingMode ? '拼写练习' : v.word;
   els.cardNote.textContent = v.note ? v.note : ' ';
@@ -127,7 +120,6 @@ function render() {
   renderLevelTabs(); unitOptions(); posOptions();
   const list = filtered();
   if (state.index >= list.length) state.index = Math.max(0, list.length - 1);
-  setAudio(current(list));
   const parts = [state.level, state.unit === '全部' ? '全部 UNIT' : 'UNIT ' + state.unit, state.pos === '全部' ? '全部词性' : state.pos];
   els.filterLabel.textContent = parts.join(' / ');
   els.summary.textContent = vocab.length + ' 个词 · 初级 883 · 中级 809 · 高级 873';
@@ -191,7 +183,6 @@ els.pos.addEventListener('change', e => { state.pos = e.target.value; state.inde
 els.hide.addEventListener('change', e => { state.hideMeaning = e.target.checked; render(); });
 els.favOnly.addEventListener('change', e => { state.favoritesOnly = e.target.checked; state.index = 0; render(); });
 els.unmasteredOnly.addEventListener('change', e => { state.unmasteredOnly = e.target.checked; state.index = 0; render(); });
-els.unitAudioBtn.addEventListener('click', () => { if (!els.unitAudio.src) return; els.unitAudio.paused ? els.unitAudio.play() : els.unitAudio.pause(); });
 els.shuffle.addEventListener('click', shuffleWord);
 els.quickShuffle.addEventListener('click', shuffleWord);
 els.prev.addEventListener('click', () => { const list=filtered(); if(!list.length)return; state.index=(state.index-1+list.length)%list.length; render(); });
