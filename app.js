@@ -1,6 +1,6 @@
 const vocab = window.TOPIK_VOCAB || [];
 const state = {
-  level: '全部', unit: '全部', pos: '全部', query: '', index: 0,
+  level: '全部', unit: '全部', pos: '全部', query: '', index: 0, isComposing: false,
   hideMeaning: false, favoritesOnly: false, unmasteredOnly: false, spellingMode: false,
   favorites: new Set(JSON.parse(localStorage.getItem('topikFavorites') || '[]')),
   mastered: new Set(JSON.parse(localStorage.getItem('topikMastered') || '[]')),
@@ -194,6 +194,7 @@ els.search.addEventListener('compositionend', e => { state.isComposing = false; 
 els.search.addEventListener('input', e => { if (state.isComposing) return; state.query = e.target.value; state.index = 0; render(); });
 els.search.addEventListener('search', e => { state.query = e.target.value; state.index = 0; render(); });
 els.search.addEventListener('change', e => { state.query = e.target.value; state.index = 0; render(); });
+els.search.addEventListener('keyup', e => { state.query = e.target.value; state.index = 0; render(); });
 els.unit.addEventListener('change', e => { state.unit = e.target.value; state.index = 0; render(); });
 els.pos.addEventListener('change', e => { state.pos = e.target.value; state.index = 0; render(); });
 els.hide.addEventListener('change', e => { state.hideMeaning = e.target.checked; render(); });
