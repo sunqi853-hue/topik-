@@ -18,8 +18,15 @@ const els = {
 };
 function saveSet(key, set) { localStorage.setItem(key, JSON.stringify([...set])); }
 function saveStudyCount() { localStorage.setItem('topikStudyCount', JSON.stringify(studyCount)); }
+function normalizeSearchText(text) {
+  return String(text || '')
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+}
 function normalizeKoreanAnswer(text) {
-  return String(text || '').replace(/s+/g, '').trim();
+  return String(text || '').replace(/\s+/g, '').trim();
 }
 function unitOptions() {
   els.unit.innerHTML = '';
@@ -38,7 +45,8 @@ function posOptions() {
   els.pos.value = state.pos;
 }
 function filtered() {
-  const q = state.query.trim().toLowerCase();
+  const q = normalizeSearchText(state.query);
+  const qCompact = q.replace(/\s+/g, '');
   return vocab.filter(v => {
     if (state.level !== '全部' && v.level !== state.level) return false;
     if (state.unit !== '全部' && String(v.unit) !== state.unit) return false;
@@ -46,8 +54,9 @@ function filtered() {
     if (state.favoritesOnly && !state.favorites.has(v.id)) return false;
     if (state.unmasteredOnly && state.mastered.has(v.id)) return false;
     if (q) {
-      const hay = [v.word, v.note, v.pos, v.meaning, v.level, 'unit '+v.unit, String(v.page)].join(' ').toLowerCase();
-      if (!hay.includes(q)) return false;
+      const hay = normalizeSearchText([v.word, v.note, v.pos, v.meaning, v.level, 'unit '+v.unit, String(v.page)].join(' '));
+      const hayCompact = hay.replace(/\s+/g, '');
+      if (!hay.includes(q) && !hayCompact.includes(qCompact)) return false;
     }
     return true;
   });
@@ -136,11 +145,14 @@ function pickKoreanVoice() {
   const voices = window.speechSynthesis.getVoices();
   return voices.find(v => v.lang === 'ko-KR') || voices.find(v => v.lang && v.lang.toLowerCase().startsWith('ko')) || null;
 }
-function speakWord(rate = 0.82) {
+function slowSpeechText(text) {
+  return Array.from(String(text || '').trim()).join(' ');
+}
+function speakWord(rate = 0.82, slow = false) {
   const list = filtered(); const v = current(list); if (!v || !('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(v.word);
-  u.lang = 'ko-KR'; u.rate = rate; u.pitch = 1; u.volume = 1;
+  const u = new SpeechSynthesisUtterance(slow ? slowSpeechText(v.word) : v.word);
+  u.lang = 'ko-KR'; u.rate = slow ? 0.42 : rate; u.pitch = 1; u.volume = 1;
   const voice = pickKoreanVoice();
   if (voice) u.voice = voice;
   window.speechSynthesis.speak(u);
@@ -177,7 +189,11 @@ function showSpellingAnswer() {
   els.spellingFeedback.textContent = '答案：' + v.word;
   els.spellingFeedback.className = 'spelling-feedback hint';
 }
-els.search.addEventListener('input', e => { state.query = e.target.value; state.index = 0; render(); });
+els.search.addEventListener('compositionstart', () => { state.isComposing = true; });
+els.search.addEventListener('compositionend', e => { state.isComposing = false; state.query = e.target.value; state.index = 0; render(); });
+els.search.addEventListener('input', e => { if (state.isComposing) return; state.query = e.target.value; state.index = 0; render(); });
+els.search.addEventListener('search', e => { state.query = e.target.value; state.index = 0; render(); });
+els.search.addEventListener('change', e => { state.query = e.target.value; state.index = 0; render(); });
 els.unit.addEventListener('change', e => { state.unit = e.target.value; state.index = 0; render(); });
 els.pos.addEventListener('change', e => { state.pos = e.target.value; state.index = 0; render(); });
 els.hide.addEventListener('change', e => { state.hideMeaning = e.target.checked; render(); });
@@ -188,7 +204,7 @@ els.quickShuffle.addEventListener('click', shuffleWord);
 els.prev.addEventListener('click', () => { const list=filtered(); if(!list.length)return; state.index=(state.index-1+list.length)%list.length; render(); });
 els.next.addEventListener('click', () => { const list=filtered(); if(!list.length)return; state.index=(state.index+1)%list.length; render(); });
 els.speak.addEventListener('click', () => speakWord(0.82));
-els.slowSpeak.addEventListener('click', () => speakWord(0.62));
+els.slowSpeak.addEventListener('click', () => speakWord(0.42, true));
 els.reveal.addEventListener('click', () => { state.hideMeaning = !state.hideMeaning; els.hide.checked = state.hideMeaning; render(); });
 els.spellMode.addEventListener('click', () => { state.spellingMode = !state.spellingMode; state.hideMeaning = false; els.hide.checked = false; render(); if (state.spellingMode) els.spellingInput.focus(); });
 els.checkSpelling.addEventListener('click', checkSpelling);
