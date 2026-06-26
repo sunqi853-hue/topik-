@@ -75,10 +75,27 @@
         </div>
         <div class="card-actions">
           <button id="speakBtn" title="朗读当前单词">朗读</button>
+          <button id="slowSpeakBtn" title="慢速朗读当前单词">慢速</button>
           <button id="revealBtn" title="显示或隐藏释义">显示释义</button>
+          <button id="spellModeBtn" title="进入或退出拼写练习">拼写</button>
           <button id="favoriteBtn" title="收藏当前单词">收藏</button>
           <button id="masterBtn" title="标记已掌握">已掌握</button>
         </div>
+        <section class="spelling-panel" id="spellingPanel" aria-label="拼写练习">
+          <div class="spelling-head">
+            <strong>拼写练习</strong>
+            <span id="spellingPrompt">看中文，写韩文</span>
+          </div>
+          <div class="spelling-row">
+            <input id="spellingInput" type="text" inputmode="text" autocomplete="off" placeholder="请输入韩文">
+            <button id="checkSpellingBtn">检查</button>
+          </div>
+          <p id="spellingFeedback" class="spelling-feedback">输入后点击检查；不会时可以点提示。</p>
+          <div class="spelling-actions">
+            <button id="hintSpellingBtn">提示首字</button>
+            <button id="showAnswerBtn">显示答案</button>
+          </div>
+        </section>
       </article>
 
       <section class="list-wrap" aria-label="词表">
@@ -95,196 +112,4 @@
   <script>window.TOPIK_AUDIO_BASE = {};</script>
   <script src="./app.js"></script>
 </body>
-</html><!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TOPIK 背词</title>
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-  <main class="app-shell">
-    <aside class="sidebar" aria-label="筛选">
-      <div class="brand">
-        <div>
-          <h1>TOPIK 背词</h1>
-          <p id="summaryText">词库加载中</p>
-        </div>
-      </div>
-
-      <label class="field">
-        <span>搜索</span>
-        <input id="searchInput" type="search" placeholder="韩文 / 中文 / 词源">
-      </label>
-
-      <section class="control-group" aria-label="等级">
-        <span class="group-label">等级</span>
-        <div class="segmented" id="levelTabs"></div>
-      </section>
-
-      <section class="control-group" aria-label="UNIT">
-        <div class="group-head">
-          <span class="group-label">UNIT</span>
-          <button class="icon-button" id="unitAudioBtn" title="播放当前 UNIT 音频" aria-label="播放当前 UNIT 音频">▶</button>
-        </div>
-        <select id="unitSelect"></select>
-        <audio id="unitAudio" controls preload="none"></audio>
-      </section>
-
-      <section class="control-group" aria-label="词性">
-        <span class="group-label">词性</span>
-        <select id="posSelect"></select>
-      </section>
-
-      <section class="control-group compact-options" aria-label="显示选项">
-        <label><input type="checkbox" id="hideMeaningToggle"> 先隐藏释义</label>
-        <label><input type="checkbox" id="favoritesOnlyToggle"> 只看收藏</label>
-        <label><input type="checkbox" id="unmasteredOnlyToggle"> 排除已掌握</label>
-      </section>
-
-      <button class="wide-action" id="quickShuffleBtn" title="随机挑选一个单词">随机挑选单词</button>
-    </aside>
-
-    <section class="study-panel">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow" id="filterLabel">全部词条</p>
-          <h2 id="currentWord">가게</h2>
-        </div>
-        <div class="top-actions">
-          <button id="shuffleBtn" title="随机抽一张">随机</button>
-          <button id="prevBtn" title="上一张">上一张</button>
-          <button id="nextBtn" title="下一张">下一张</button>
-        </div>
-      </header>
-
-      <article class="card" id="wordCard">
-        <div class="card-main">
-          <div class="korean" id="cardWord"></div>
-          <div class="note" id="cardNote"></div>
-          <div class="meaning" id="cardMeaning"></div>
-        </div>
-        <div class="card-meta">
-          <span id="cardPos"></span>
-          <span id="cardLevelUnit"></span>
-          <span id="cardPage"></span>
-        </div>
-        <div class="card-actions">
-          <button id="speakBtn" title="朗读当前单词">朗读</button>
-          <button id="revealBtn" title="显示或隐藏释义">显示释义</button>
-          <button id="favoriteBtn" title="收藏当前单词">收藏</button>
-          <button id="masterBtn" title="标记已掌握">已掌握</button>
-        </div>
-      </article>
-
-      <section class="list-wrap" aria-label="词表">
-        <div class="list-head">
-          <strong id="countText">0 个词</strong>
-          <span>点击任意词条切换卡片</span>
-        </div>
-        <div id="wordList" class="word-list"></div>
-      </section>
-    </section>
-  </main>
-
-  <script src="./vocab.js"></script>
-  <script src="./app.js"></script>
-</body>
-</html><!doctype html>
-<html lang="zh-CN">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TOPIK 背词</title>
-  <link rel="stylesheet" href="./styles.css">
-</head>
-<body>
-  <main class="app-shell">
-    <aside class="sidebar" aria-label="筛选">
-      <div class="brand">
-        <div>
-          <h1>TOPIK 背词</h1>
-          <p id="summaryText">词库加载中</p>
-        </div>
-      </div>
-
-      <label class="field">
-        <span>搜索</span>
-        <input id="searchInput" type="search" placeholder="韩文 / 中文 / 词源">
-      </label>
-
-      <section class="control-group" aria-label="等级">
-        <span class="group-label">等级</span>
-        <div class="segmented" id="levelTabs"></div>
-      </section>
-
-      <section class="control-group" aria-label="UNIT">
-        <div class="group-head">
-          <span class="group-label">UNIT</span>
-          <button class="icon-button" id="unitAudioBtn" title="播放当前 UNIT 音频" aria-label="播放当前 UNIT 音频">▶</button>
-        </div>
-        <select id="unitSelect"></select>
-        <audio id="unitAudio" controls preload="none"></audio>
-      </section>
-
-      <section class="control-group" aria-label="词性">
-        <span class="group-label">词性</span>
-        <select id="posSelect"></select>
-      </section>
-
-      <section class="control-group compact-options" aria-label="显示选项">
-        <label><input type="checkbox" id="hideMeaningToggle"> 先隐藏释义</label>
-        <label><input type="checkbox" id="favoritesOnlyToggle"> 只看收藏</label>
-        <label><input type="checkbox" id="unmasteredOnlyToggle"> 排除已掌握</label>
-      </section>
-
-      <button class="wide-action" id="quickShuffleBtn" title="随机挑选一个单词">随机挑选单词</button>
-    </aside>
-
-    <section class="study-panel">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow" id="filterLabel">全部词条</p>
-          <h2 id="currentWord">가게</h2>
-        </div>
-        <div class="top-actions">
-          <button id="shuffleBtn" title="随机抽一张">随机</button>
-          <button id="prevBtn" title="上一张">上一张</button>
-          <button id="nextBtn" title="下一张">下一张</button>
-        </div>
-      </header>
-
-      <article class="card" id="wordCard">
-        <div class="card-main">
-          <div class="korean" id="cardWord"></div>
-          <div class="note" id="cardNote"></div>
-          <div class="meaning" id="cardMeaning"></div>
-        </div>
-        <div class="card-meta">
-          <span id="cardPos"></span>
-          <span id="cardLevelUnit"></span>
-          <span id="cardPage"></span>
-        </div>
-        <div class="card-actions">
-          <button id="speakBtn" title="朗读当前单词">朗读</button>
-          <button id="revealBtn" title="显示或隐藏释义">显示释义</button>
-          <button id="favoriteBtn" title="收藏当前单词">收藏</button>
-          <button id="masterBtn" title="标记已掌握">已掌握</button>
-        </div>
-      </article>
-
-      <section class="list-wrap" aria-label="词表">
-        <div class="list-head">
-          <strong id="countText">0 个词</strong>
-          <span>点击任意词条切换卡片</span>
-        </div>
-        <div id="wordList" class="word-list"></div>
-      </section>
-    </section>
-  </main>
-
-  <script src="./data/vocab.js"></script>
-  <script src="./app.js"></script>
-</body>
-</html> 
+</html>
