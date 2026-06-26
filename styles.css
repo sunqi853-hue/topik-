@@ -11,7 +11,7 @@
   --shadow: 0 18px 42px rgba(37, 45, 41, 0.12);
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
+html, body { margin: 0; min-height: 100%; overflow-x: hidden; }
 body {
   font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
   color: var(--ink);
@@ -21,6 +21,7 @@ button, input, select { font: inherit; }
 button { cursor: pointer; }
 .app-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
 }
@@ -102,6 +103,35 @@ audio { width: 100%; height: 40px; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .card-actions button.active { color: #fff; border-color: var(--green); background: var(--green); }
 .card-actions button.warn.active { border-color: var(--gold); background: var(--gold); }
+.spelling-panel {
+  display: none;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  gap: 12px;
+}
+.spelling-panel.active { display: grid; }
+.spelling-head { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
+.spelling-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.spelling-row input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 20px;
+}
+.spelling-row button, .spelling-actions button {
+  border: 1px solid var(--line);
+  background: #fff;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0 14px;
+}
+.spelling-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.spelling-feedback { margin: 0; color: var(--muted); line-height: 1.5; }
+.spelling-feedback.ok { color: var(--green); font-weight: 700; }
+.spelling-feedback.bad { color: var(--red); font-weight: 700; }
+.spelling-feedback.hint { color: var(--blue); }
 .list-wrap { background: rgba(255,255,255,.72); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .list-head { min-height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); }
 .word-list { max-height: 46vh; overflow: auto; }
@@ -123,13 +153,34 @@ audio { width: 100%; height: 40px; }
 .word-row .tags { color: var(--muted); font-size: 13px; text-align: right; }
 .empty { padding: 30px 16px; color: var(--muted); }
 @media (max-width: 840px) {
-  .app-shell { grid-template-columns: 1fr; }
-  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
-  .study-panel { padding: 18px; }
+  html, body { min-height: 100%; overflow-x: hidden; }
+  body { -webkit-text-size-adjust: 100%; }
+  .app-shell { grid-template-columns: 1fr; min-height: auto; display: block; }
+  .sidebar {
+    position: static;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 18px;
+  }
+  .study-panel {
+    padding: 18px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    display: grid;
+  }
   .topbar { align-items: flex-start; flex-direction: column; }
   .top-actions { justify-content: flex-start; }
-  .card { padding: 22px; }
+  .card { padding: 22px; min-height: auto; }
+  .card-main { min-height: 120px; }
+  .korean { font-size: clamp(38px, 13vw, 64px); }
   .meaning { font-size: 23px; }
+  .word-list { max-height: none; overflow: visible; }
+  .list-head { align-items: flex-start; flex-direction: column; padding: 12px 16px; }
+  .segmented { grid-template-columns: repeat(2, 1fr); }
+  .spelling-head { flex-direction: column; gap: 4px; }
+  .spelling-row { grid-template-columns: 1fr; }
   .word-row { grid-template-columns: 1fr; gap: 4px; }
   .word-row .tags { text-align: left; }
 }
